@@ -30,7 +30,7 @@
 		},
 		{
 			id: 'formality_preference',
-			question: 'What's your typical formality level?',
+			question: "What's your typical formality level?",
 			type: 'range',
 			labels: ['Very Casual', 'Casual', 'Smart Casual', 'Business', 'Formal'],
 		},
