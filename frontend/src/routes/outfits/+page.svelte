@@ -193,7 +193,7 @@
 			{#each $outfitsStore.generated as outfit, i (outfit.id)}
 				<OutfitCard
 					{outfit}
-					{index}={i}
+					index={i}
 					on:like={handleLike}
 					on:save={handleSave}
 					on:share={handleShare}
