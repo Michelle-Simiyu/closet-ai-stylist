@@ -1,245 +1,392 @@
 # 👗 Closet AI Stylist
 
-An AI-powered personal stylist that helps users create stylish outfits from their existing wardrobe. The system uses computer vision and machine learning to analyze clothing items and recommend compatible outfit combinations.
+> **AI-powered personal wardrobe assistant** — upload your clothing and get personalized outfit combinations in seconds.
+
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi)](https://fastapi.tiangolo.com)
+[![SvelteKit](https://img.shields.io/badge/SvelteKit-2.x-FF3E00?logo=svelte)](https://kit.svelte.dev)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python)](https://python.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)](https://typescriptlang.org)
+
+---
+
+## ✨ What is Closet AI?
+
+Closet AI is a production-ready prototype of an AI personal stylist. Users catalog their clothing, and the AI generates personalized outfit combinations from their existing wardrobe using:
+
+- **Color harmony rules** (neutral anchors, complementary pairs, analogous groups)
+- **Formality matching** (ensures consistent dress codes across pieces)
+- **Style coherence** (casual, formal, sporty, bohemian, minimalist)
+- **Occasion filtering** (casual, work, formal, party, date)
+- **Weather adaptation** (mock weather API for temperature-aware suggestions)
+- **Personalization** (style quiz + feedback learning from likes/dislikes)
+
+**Magic Moment:** User loads demo wardrobe → clicks Generate → receives 3-5 styled outfits with compatibility scores and styling tips in under 2 seconds.
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.9 or higher
+
+- Python 3.11+
+- Node.js 20+
 - Git
-- 8GB+ RAM recommended (for ML models)
-- For GPU acceleration: CUDA-compatible NVIDIA GPU (optional but recommended)
 
-### Installation
+### Local Development (5 minutes)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/closet-ai-stylist.git
-   cd closet-ai-stylist
-2. Set up virtual environment
-# Create virtual environment
-    python -m venv venv
-    
-    # Activate it
-    # On macOS/Linux:
-    source venv/bin/activate
-    # On Windows:
-    # venv\Scripts\activate
-3. Install dependencies
-     pip install -r requirements.txt
-4. Set up environment variables
-     cp .env.example .env
-# Edit .env file if needed (no changes required for basic setup)
-🎯 Getting Started
-Option 1: Run the Interactive Demo (Recommended for First Time)
-bash
-# Generate sample data first
-python -m src.data.dataset_generator
+```bash
+# 1. Clone
+git clone https://github.com/yourusername/closet-ai-stylist.git
+cd closet-ai-stylist
 
-# Launch the demo
-streamlit run demo/streamlit_app.py
-Open your browser to http://localhost:8501
+# 2. Backend setup
+cd backend
+python -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env              # Edit .env if needed
 
-Option 2: Test the Core Engine
-bash
-# Run the compatibility engine tests
-python -m src.models.compatibility
-Option 3: Start the API Server
-bash
-uvicorn src.api.server:app --reload --port 8000
-API will be available at http://localhost:8000
+# 3. Start backend (in one terminal)
+uvicorn src.main:app --reload --port 8000
 
-Interactive docs: http://localhost:8000/docs
+# 4. Frontend setup (in another terminal)
+cd frontend
+npm install
+npm run dev
 
-Alternative docs: http://localhost:8000/redoc
+# 5. Open browser
+open http://localhost:5173
+```
 
-🛠️ Development Workflow
-1. Generate Synthetic Data
-bash
-# Generate 200 synthetic clothing items
-python -m src.data.dataset_generator --items 200 --outfits 50
+### Docker (recommended for demos)
 
-# Generate with custom output
-python -m src.data.dataset_generator --output my_closet.json
-2. Test the Compatibility Engine
-bash
-# Direct test
-python -c "
-from src.models.compatibility import RuleBasedStylist
-stylist = RuleBasedStylist()
-# Test with synthetic data
-"
+```bash
+cp .env.example .env
+docker-compose up --build
+# Backend: http://localhost:8000
+# Frontend: http://localhost:3000
+# API docs: http://localhost:8000/docs
+```
 
-# Run unit tests
-pytest tests/
-3. Add Your Own Rules
-Edit src/models/compatibility.py to:
+### Make commands
 
-Add new color compatibility rules
+```bash
+make install        # Install all dependencies
+make dev-backend    # Start backend with hot reload
+make dev-frontend   # Start frontend dev server
+make test           # Run backend tests
+make test-coverage  # Run tests with coverage report
+make docker-up      # Start with Docker Compose
+make docker-down    # Stop Docker services
+```
 
-Define new styling patterns
+---
 
-Adjust scoring weights
+## 🎯 Demo Mode
 
-Add seasonal considerations
+The fastest way to see the magic moment:
 
-4. Extend with ML Models
-Check notebooks/01_experiment_compatibility.ipynb for examples of:
+1. Register an account at `http://localhost:5173/register`
+2. Complete the style quiz (takes 30 seconds)
+3. Click **"Load Demo Wardrobe"** — loads 10 pre-styled items
+4. Navigate to **Outfits** → click **Generate**
+5. Receive 3-5 AI-styled outfits with scores and tips!
 
-Training neural networks on outfit compatibility
+Alternatively, skip registration and use the demo directly via `/onboarding`.
 
-Image classification for clothing items
+---
 
-Recommendation system development
+## 🏗️ Architecture
 
-🔧 Available Scripts
-bash
-# Setup scripts
-./scripts/setup_environment.sh    # One-time setup (Linux/Mac)
-./scripts/run_demo.sh             # Launch demo with all prerequisites
+```
+closet-ai/
+├── backend/                    # FastAPI Python backend
+│   ├── src/
+│   │   ├── api/v1/endpoints/   # REST endpoints
+│   │   │   ├── auth.py         # Register, login, JWT
+│   │   │   ├── closet.py       # CRUD for clothing items
+│   │   │   ├── outfits.py      # Generate, save, like
+│   │   │   ├── ai.py           # Image analysis
+│   │   │   └── weather.py      # Mock weather data
+│   │   ├── core/               # Config, DB, security, exceptions
+│   │   ├── models/             # SQLModel ORM models
+│   │   │   ├── user.py
+│   │   │   ├── clothing.py
+│   │   │   ├── outfit.py
+│   │   │   └── feedback.py
+│   │   ├── services/           # Business logic layer
+│   │   │   ├── closet_service.py
+│   │   │   ├── outfit_service.py
+│   │   │   └── ai_service.py
+│   │   └── ai/                 # AI engine
+│   │       ├── color_analyzer.py   # Color harmony rules
+│   │       ├── rules_engine.py     # Formality/style/season rules
+│   │       ├── compatibility.py    # Weighted scoring (0-100)
+│   │       └── image_processor.py  # Background removal, resizing
+│   └── tests/                  # pytest test suite
+│
+├── frontend/                   # SvelteKit TypeScript frontend
+│   └── src/
+│       ├── routes/             # File-based routing
+│       │   ├── +page.svelte    # Landing page
+│       │   ├── login/          # Auth pages
+│       │   ├── register/
+│       │   ├── onboarding/     # Style quiz + demo load
+│       │   ├── closet/         # Wardrobe management
+│       │   └── outfits/        # Generator + saved
+│       └── lib/
+│           ├── components/     # Reusable UI components
+│           ├── stores/         # Svelte reactive stores
+│           ├── api/            # Typed API client
+│           └── utils/          # Analytics, helpers
+│
+├── docker-compose.yml
+├── render.yaml                 # Render deployment
+├── railway.json                # Railway deployment
+└── Makefile
+```
 
-# Development utilities
-python -m src.utils.clean_data    # Clean and process data
-python -m src.utils.export_model  # Export trained models
-📊 API Endpoints
-POST /api/generate-outfits
-Generate outfit combinations from a list of clothing items.
+### AI Engine — Compatibility Scoring
 
-Request:
+Outfits are scored 0–100 using weighted rules:
 
-json
-{
-  "items": [
-    {
-      "item_id": "top_001",
-      "category": "top",
-      "color": "blue",
-      "style": "casual",
-      "formality": 2
-    }
-  ],
-  "occasion": "casual",
-  "max_outfits": 5
-}
+| Dimension | Weight | Rules |
+|-----------|--------|-------|
+| Formality consistency | 30% | Max gap of 1 = perfect; gap > 3 = penalty |
+| Color harmony | 25% | Neutrals always pass; complementary/analogous pairs score high |
+| Style coherence | 20% | Casual + minimalist = compatible; sporty + formal = penalty |
+| Outfit completeness | 15% | Has top+bottom or dress; bonus for shoes/accessories |
+| Weather / Season | 10% | Cold weather requires outerwear; summer items in summer |
+
+---
+
+## 📡 API Reference
+
+Interactive docs: `http://localhost:8000/docs`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/register` | Create account |
+| POST | `/api/v1/auth/login` | Login (returns JWT) |
+| GET | `/api/v1/auth/me` | Get current user |
+| POST | `/api/v1/auth/quiz` | Save style quiz |
+| GET | `/api/v1/closet` | List all clothing items |
+| POST | `/api/v1/closet` | Add clothing item |
+| PUT | `/api/v1/closet/{id}` | Update item |
+| DELETE | `/api/v1/closet/{id}` | Delete item |
+| POST | `/api/v1/closet/upload` | Upload image (+ background removal) |
+| POST | `/api/v1/closet/demo` | Load demo wardrobe |
+| GET | `/api/v1/closet/stats` | Wardrobe analytics |
+| POST | `/api/v1/outfits/generate` | Generate AI outfits |
+| GET | `/api/v1/outfits/saved` | Get saved outfits |
+| POST | `/api/v1/outfits/{id}/save` | Save an outfit |
+| POST | `/api/v1/outfits/{id}/like` | Like/dislike outfit |
+| POST | `/api/v1/ai/analyze` | Analyze clothing image |
+| GET | `/api/v1/weather` | Get mock weather |
+| GET | `/health` | Health check |
+
+### Example: Generate Outfits
+
+```bash
+curl -X POST http://localhost:8000/api/v1/outfits/generate \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"occasion": "casual", "max_outfits": 5}'
+```
+
 Response:
-
-json
+```json
 {
   "outfits": [
     {
-      "outfit_id": "outfit_001",
-      "items": ["top_001", "bottom_005"],
-      "compatibility_score": 0.85,
-      "description": "Blue top with black jeans",
-      "feedback": ["Great color combination", "Casual yet stylish"]
+      "id": "uuid",
+      "items": [{"id": "...", "name": "White Shirt", ...}],
+      "compatibility_score": 87.5,
+      "feedback": ["Classic neutral palette", "Formality levels are consistent"],
+      "description": "A great casual look: white shirt + navy jeans",
+      "occasion": "casual"
     }
-  ]
+  ],
+  "count": 5,
+  "occasion": "casual",
+  "generation_time_ms": 45.2
 }
-POST /api/analyze-item
-Analyze a clothing image (MVP returns mock data).
+```
 
-🧪 Testing
-bash
-# Run all tests
-pytest
+---
 
-# Run specific test file
-pytest tests/test_compatibility.py
+## 🔧 Configuration
 
-# Run with coverage
-pytest --cov=src tests/
+### Environment Variables
 
-# Run with verbose output
-pytest -v
-🐛 Troubleshooting
-Common Issues
-1. CUDA/GPU Issues:
+**Backend** (`backend/.env`):
 
-bash
-# If you get CUDA errors, install CPU-only PyTorch:
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET_KEY` | Yes | JWT signing key (use `openssl rand -hex 32`) |
+| `DATABASE_URL` | No | SQLite path (default: `sqlite:///./closet_ai.db`) |
+| `CLOUDINARY_CLOUD_NAME` | No | Cloudinary cloud name for image hosting |
+| `CLOUDINARY_API_KEY` | No | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | No | Cloudinary API secret |
+| `FRONTEND_URL` | No | CORS origin (default: `http://localhost:5173`) |
+| `DEBUG` | No | Enable debug logging (default: `false`) |
 
-# Or check CUDA compatibility:
-python -c "import torch; print(torch.cuda.is_available())"
-2. Port Already in Use:
+**Frontend** (`frontend/.env`):
 
-bash
-# Find and kill process using port 8501
-lsof -ti:8501 | xargs kill -9  # macOS/Linux
-# OR
-netstat -ano | findstr :8501  # Windows, then taskkill /PID [PID] /F
-3. Missing Dependencies:
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_POSTHOG_KEY` | No | PostHog analytics key |
 
-bash
-# Recreate virtual environment
-deactivate
-rm -rf venv
-python -m venv venv
-source venv/bin/activate
+### Optional Services (Free Tier)
+
+**Cloudinary** (image hosting):
+1. Sign up at [cloudinary.com](https://cloudinary.com) — free tier includes 25GB storage
+2. Add credentials to `backend/.env`
+
+**PostHog** (analytics):
+1. Sign up at [posthog.com](https://posthog.com) — free for <1M events/month
+2. Add API key to `frontend/.env` as `VITE_POSTHOG_KEY`
+
+---
+
+## 🚢 Deployment
+
+### Render (Recommended — free tier)
+
+```bash
+# 1. Fork/push this repo to GitHub
+# 2. Go to render.com → New → Blueprint
+# 3. Connect your repo — Render reads render.yaml automatically
+# 4. Set environment variables in the Render dashboard
+# 5. Deploy!
+```
+
+The `render.yaml` configures:
+- Backend as a Python web service on port 8000
+- Frontend as a Node.js web service on port 3000
+- Auto-generated `SECRET_KEY`
+
+### Railway
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+railway login
+
+# Deploy backend
+cd backend
+railway up
+
+# Deploy frontend
+cd frontend
+railway up
+```
+
+### Manual / VPS
+
+```bash
+# Backend
+cd backend
 pip install -r requirements.txt
-4. File Permission Issues (Linux/Mac):
+gunicorn src.main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 
-bash
-chmod +x scripts/*.sh
-📈 Next Steps for Development
-Add Real Image Processing
+# Frontend
+cd frontend
+npm run build
+node build/index.js  # or serve with nginx
+```
 
-Integrate background removal (rembg)
+---
 
-Add image classification models
+## 🧪 Testing
 
-Implement clothing attribute extraction
+```bash
+cd backend
 
-Enhance Compatibility Engine
+# Run all tests
+pytest -v
 
-Train ML models on fashion datasets
+# Run specific test module
+pytest tests/test_compatibility.py -v
+pytest tests/test_api.py -v
+pytest tests/test_services.py -v
 
-Add user feedback loop
+# With coverage
+pytest --cov=src --cov-report=term-missing
 
-Implement collaborative filtering
+# Coverage target: 80% on core modules
+```
 
-Scale the System
+Test suite covers:
+- Color harmony scoring and neutral detection
+- Formality matching rules
+- Style compatibility matrix
+- Outfit completeness checking
+- Weather appropriateness
+- Full API endpoint integration tests
+- CRUD service layer tests
+- Feedback learning tests
 
-Add database (PostgreSQL/Redis)
+---
 
-Implement user authentication
+## 🛡️ Security
 
-Add caching layer
+| Aspect | Implementation |
+|--------|---------------|
+| Passwords | bcrypt hashing via passlib |
+| Auth | JWT tokens, 24-hour expiry |
+| CORS | Configured for frontend origin only |
+| SQL | SQLModel ORM — no raw SQL |
+| XSS | SvelteKit auto-escaping |
+| Input validation | Pydantic models on all endpoints |
+| File uploads | Content-type check + 10MB limit |
 
-Improve UX
+---
 
-Add drag-and-drop closet organization
+## 🔮 Future Features (Roadmap)
 
-Implement outfit calendar
+- **Native iOS/Android apps** — React Native / Swift
+- **Advanced ML models** — Neural networks trained on fashion datasets (DeepFashion)
+- **Social feed** — Share outfits, follow friends
+- **Marketplace integration** — Affiliate shopping links for completing outfits
+- **Virtual try-on** — AR overlay with clothing items
+- **Professional stylist tools** — Client management, lookbooks
+- **PostgreSQL + Redis** — Production-grade database and caching
+- **Background job queue** — Celery for async image processing
+- **Email notifications** — Weekly outfit suggestions
 
-Add social sharing features
+---
 
-🎓 Learning Resources
-Fashion Datasets
+## 🤝 Contributing
 
-PyTorch Tutorials
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Run tests: `make test`
+4. Commit: `git commit -m 'Add amazing feature'`
+5. Push: `git push origin feature/amazing-feature`
+6. Open a Pull Request
 
-FastAPI Documentation
+### Code Standards
 
-Streamlit Docs
+- Python: type hints on all functions, docstrings for public APIs
+- TypeScript: strict mode enabled
+- Tests: aim for 80%+ coverage on new features
+- Commits: conventional commits format preferred
 
-🤝 Contributing
-Fork the repository
+---
 
-Create a feature branch: git checkout -b feature-name
+## 📄 License
 
-Commit changes: git commit -am 'Add feature'
+MIT License — see [LICENSE](LICENSE) for details.
 
-Push to branch: git push origin feature-name
+---
 
-Submit a Pull Request
+## 🙏 Acknowledgments
 
-📄 License
-MIT License - see LICENSE file for details.
-
-🙏 Acknowledgments
-Built with PyTorch, FastAPI, and Streamlit
-
-Inspired by personal styling challenges
-
-Uses various open-source fashion datasets
+- [FastAPI](https://fastapi.tiangolo.com) — excellent async Python framework
+- [SvelteKit](https://kit.svelte.dev) — delightful full-stack framework
+- [SQLModel](https://sqlmodel.tiangolo.com) — SQLAlchemy + Pydantic unified
+- [rembg](https://github.com/danielgatis/rembg) — background removal
+- [Tailwind CSS](https://tailwindcss.com) — utility-first CSS
+- [Lucide](https://lucide.dev) — beautiful open-source icons
+- Fashion color theory from [Color Matters](https://colormatters.com)
