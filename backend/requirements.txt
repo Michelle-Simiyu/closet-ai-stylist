@@ -14,8 +14,11 @@ passlib[bcrypt]>=1.7.4
 # Settings
 pydantic-settings>=2.1.0
 
-# Image processing — Pillow 11+ required for Python 3.13/3.14
-Pillow>=10.4.0
+# Image processing — OPTIONAL
+# Pillow requires Python 3.12 or 3.13 for pre-built Windows wheels.
+# Python 3.14 is not yet supported. Skip this line if you are on Python 3.14,
+# or install manually after: pip install Pillow --only-binary :all:
+# Pillow>=11.0.0
 
 # Background removal (optional — comment out if install fails)
 # rembg==2.0.50
