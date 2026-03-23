@@ -14,8 +14,12 @@ passlib[bcrypt]>=1.7.4
 # Settings
 pydantic-settings>=2.1.0
 
-# Image processing
-Pillow==10.4.0
+# Image processing — OPTIONAL
+# Pillow 10.x has no pre-built wheels for Python 3.14 on Windows.
+# Use Pillow>=11.0.0 on Python 3.12/3.13, or install separately:
+#   pip install "Pillow>=11.0.0" --only-binary :all:
+# The app runs without Pillow (image resize/color extraction degrade gracefully).
+# Pillow>=11.0.0
 
 # Background removal (optional — comment out if install fails)
 # rembg==2.0.50
