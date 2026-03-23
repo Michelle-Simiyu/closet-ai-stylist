@@ -5,10 +5,17 @@
 	import { profileApi } from '$lib/api/client';
 	import { Camera, User, Lock, Eye, Palette } from 'lucide-svelte';
 
-	let activeTab: 'profile' | 'privacy' | 'style' | 'account' = 'profile';
+	type ActiveTab = 'profile' | 'privacy' | 'style' | 'account';
+	let activeTab: ActiveTab = 'profile';
 	let saving = false;
 	let saved = false;
 	let error = '';
+
+	function setTab(id: string) {
+		activeTab = id as ActiveTab;
+		error = '';
+		saved = false;
+	}
 
 	// Profile fields
 	let username = '';
@@ -18,7 +25,7 @@
 	let countrySearch = '';
 
 	// Privacy
-	let closetVisibility: 'private' | 'friends' | 'public' = 'private';
+	let closetVisibility: Visibility = 'private';
 
 	// Change password
 	let currentPassword = '';
@@ -115,11 +122,14 @@
 		{ value: 'prefer_not_to_say', label: 'Prefer not to say', emoji: '🤍' },
 	];
 
-	const visibilityOptions = [
+	type Visibility = 'private' | 'friends' | 'public';
+	const visibilityOptions: { value: Visibility; label: string; desc: string; emoji: string }[] = [
 		{ value: 'private', label: 'Private', desc: 'Only you can see your closet', emoji: '🔒' },
 		{ value: 'friends', label: 'Friends only', desc: 'Only friends can see your closet & outfits', emoji: '👥' },
 		{ value: 'public', label: 'Public', desc: 'Anyone can view your closet & saved outfits', emoji: '🌍' },
 	];
+
+	function setVisibility(v: Visibility) { closetVisibility = v; }
 </script>
 
 <svelte:head><title>Settings — Closet AI</title></svelte:head>
@@ -140,7 +150,7 @@
 				class:shadow-sm={activeTab === tab.id}
 				class:text-gray-900={activeTab === tab.id}
 				class:text-gray-500={activeTab !== tab.id}
-				on:click={() => { activeTab = tab.id as typeof activeTab; error = ''; saved = false; }}
+				on:click={() => setTab(tab.id)}
 			>
 				<svelte:component this={tab.icon} size={14} />
 				{tab.label}
@@ -250,7 +260,7 @@
 						class:border-primary-500={closetVisibility === opt.value}
 						class:bg-primary-50={closetVisibility === opt.value}
 						class:border-gray-200={closetVisibility !== opt.value}
-						on:click={() => (closetVisibility = opt.value as typeof closetVisibility)}
+						on:click={() => setVisibility(opt.value)}
 					>
 						<div class="flex items-center gap-3">
 							<span class="text-xl">{opt.emoji}</span>
