@@ -1,6 +1,5 @@
 /**
  * API client for Closet AI backend.
- * All requests are authenticated via JWT stored in localStorage.
  */
 
 const API_BASE = '/api/v1';
@@ -29,11 +28,8 @@ class ApiClient {
 	private async handleResponse<T>(res: Response): Promise<T> {
 		if (!res.ok) {
 			let error: ApiError;
-			try {
-				error = await res.json();
-			} catch {
-				error = { error: res.statusText, status_code: res.status };
-			}
+			try { error = await res.json(); }
+			catch { error = { error: res.statusText, status_code: res.status }; }
 			throw error;
 		}
 		if (res.status === 204) return undefined as T;
@@ -42,9 +38,7 @@ class ApiClient {
 
 	async get<T>(path: string, params?: Record<string, string | number | boolean>): Promise<T> {
 		const url = new URL(API_BASE + path, window.location.origin);
-		if (params) {
-			Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
-		}
+		if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
 		const res = await fetch(url.toString(), { headers: this.headers() });
 		return this.handleResponse<T>(res);
 	}
@@ -77,6 +71,15 @@ class ApiClient {
 		return this.handleResponse<T>(res);
 	}
 
+	async patch<T>(path: string, body?: unknown): Promise<T> {
+		const res = await fetch(API_BASE + path, {
+			method: 'PATCH',
+			headers: this.headers(),
+			body: body ? JSON.stringify(body) : undefined,
+		});
+		return this.handleResponse<T>(res);
+	}
+
 	async delete<T>(path: string): Promise<T> {
 		const res = await fetch(API_BASE + path, {
 			method: 'DELETE',
@@ -88,13 +91,27 @@ class ApiClient {
 
 export const api = new ApiClient();
 
-// ---- Typed API Methods ----
+// ---- Types ----
 
 export interface User {
 	id: string;
 	email: string;
 	username: string;
 	style_profile?: Record<string, unknown>;
+	gender?: string;
+	country?: string;
+	bio?: string;
+	avatar_url?: string;
+	closet_visibility: string;
+	created_at: string;
+}
+
+export interface UserPublic {
+	id: string;
+	username: string;
+	bio?: string;
+	avatar_url?: string;
+	closet_visibility: string;
 	created_at: string;
 }
 
@@ -182,7 +199,46 @@ export interface WeatherData {
 	season: string;
 }
 
-// Auth
+export interface FriendshipRead {
+	id: string;
+	requester_id: string;
+	addressee_id: string;
+	status: string;
+	created_at: string;
+}
+
+export interface ClosetRecommendationRead {
+	id: string;
+	from_user_id: string;
+	to_user_id: string;
+	item_id?: string;
+	outfit_id?: string;
+	message?: string;
+	rec_type: string;
+	created_at: string;
+	is_read: boolean;
+}
+
+export interface MarketplaceListing {
+	id: string;
+	user_id: string;
+	item?: ClothingItem;
+	price?: number;
+	currency: string;
+	description?: string;
+	created_at: string;
+}
+
+export interface UserUpdate {
+	username?: string;
+	bio?: string;
+	gender?: string;
+	country?: string;
+	avatar_url?: string;
+	closet_visibility?: string;
+}
+
+// ---- Auth ----
 export const authApi = {
 	register: (email: string, username: string, password: string) =>
 		api.post<TokenResponse>('/auth/register', { email, username, password }),
@@ -205,43 +261,71 @@ export const authApi = {
 	saveQuiz: (quiz: Record<string, unknown>) => api.post('/auth/quiz', quiz),
 };
 
-// Closet
+// ---- Profile ----
+export const profileApi = {
+	update: (updates: UserUpdate) => api.patch<User>('/auth/profile', updates),
+	changePassword: (current_password: string, new_password: string) =>
+		api.post('/auth/change-password', { current_password, new_password }),
+};
+
+// ---- Closet ----
 export const closetApi = {
 	getAll: (params?: { category?: string; color?: string; include_demo?: boolean }) =>
 		api.get<ClothingItem[]>('/closet', params as Record<string, string>),
-
 	add: (item: ClothingItemCreate) => api.post<ClothingItem>('/closet', item),
-
 	update: (id: string, item: Partial<ClothingItemCreate>) =>
 		api.put<ClothingItem>(`/closet/${id}`, item),
-
 	delete: (id: string) => api.delete<void>(`/closet/${id}`),
-
 	loadDemo: () => api.post<ClothingItem[]>('/closet/demo'),
-
 	stats: () => api.get<ClosetStats>('/closet/stats'),
-
 	upload: async (file: File, removeBg = true): Promise<{ image_url: string; suggestions: Record<string, string> }> => {
 		const form = new FormData();
 		form.append('file', file);
-		form.append('remove_bg', String(removeBg));
 		return api.postForm(`/closet/upload?remove_bg=${removeBg}`, form);
 	},
 };
 
-// Outfits
+// ---- Outfits ----
 export const outfitsApi = {
 	generate: (req: GenerateRequest) =>
 		api.post<OutfitGenerationResponse>('/outfits/generate', req),
-
 	saved: () => api.get<Outfit[]>('/outfits/saved'),
-
 	save: (id: string) => api.post(`/outfits/${id}/save`),
-
 	like: (id: string, liked: boolean) => api.post(`/outfits/${id}/like`, { liked }),
 };
 
-// Weather
+// ---- Social ----
+export const socialApi = {
+	searchUsers: (q: string) => api.get<UserPublic[]>('/social/users/search', { q }),
+	getUserProfile: (id: string) => api.get<UserPublic>(`/social/users/${id}`),
+	getFriendCloset: (id: string) => api.get<ClothingItem[]>(`/social/users/${id}/closet`),
+	getFriendOutfits: (id: string) => api.get<unknown[]>(`/social/users/${id}/outfits`),
+
+	getFriends: () => api.get<UserPublic[]>('/social/friends'),
+	getRequests: () => api.get<FriendshipRead[]>('/social/friends/requests'),
+	getSentRequests: () => api.get<FriendshipRead[]>('/social/friends/sent'),
+	sendFriendRequest: (userId: string) => api.post(`/social/friends/${userId}`),
+	acceptRequest: (friendshipId: string) => api.post(`/social/friends/accept/${friendshipId}`),
+	removeFriend: (userId: string) => api.delete(`/social/friends/${userId}`),
+
+	getMarketplace: () => api.get<MarketplaceListing[]>('/social/marketplace'),
+	listForSale: (data: { item_id: string; price?: number; currency?: string; description?: string }) =>
+		api.post('/social/marketplace', data),
+	markSold: (listingId: string) => api.patch(`/social/marketplace/${listingId}/sold`),
+	removeListing: (listingId: string) => api.delete(`/social/marketplace/${listingId}`),
+
+	getRecommendations: () => api.get<ClosetRecommendationRead[]>('/social/recommendations'),
+	sendRecommendation: (data: {
+		to_user_id: string;
+		item_id?: string;
+		outfit_id?: string;
+		message?: string;
+		rec_type?: string;
+	}) => api.post('/social/recommendations', data),
+	markRecommendationRead: (id: string) => api.post(`/social/recommendations/${id}/read`),
+};
+
+// ---- Weather ----
 export const weatherApi = {
 	get: (city = 'New York') => api.get<WeatherData>('/weather', { city }),
 };
