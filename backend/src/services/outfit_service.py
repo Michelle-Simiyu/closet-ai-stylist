@@ -4,7 +4,7 @@ import uuid
 from typing import List, Optional, Dict, Any
 from itertools import combinations
 from sqlmodel import Session, select
-from ..models.clothing import ClothingItem, Category
+from ..models.clothing import ClothingItem, ClothingItemRead, Category
 from ..models.outfit import Outfit, GenerateOutfitsRequest, OutfitWithItems
 from ..models.feedback import Feedback
 from ..core.exceptions import NotFoundError, AuthorizationError
@@ -19,7 +19,11 @@ def _build_outfit_with_items(
     items_map: Dict[str, ClothingItem],
 ) -> OutfitWithItems:
     """Combine outfit record with its item objects."""
-    outfit_items = [items_map[iid] for iid in outfit.items if iid in items_map]
+    outfit_items = [
+        ClothingItemRead.model_validate(items_map[iid])
+        for iid in outfit.items
+        if iid in items_map
+    ]
     return OutfitWithItems(
         id=outfit.id,
         user_id=outfit.user_id,
@@ -135,7 +139,7 @@ async def generate_outfits(
             user_id=user_id,
             name=None,
             occasion=request.occasion,
-            items=combo,
+            items=[ClothingItemRead.model_validate(i) for i in combo],
             compatibility_score=score,
             liked=False,
             worn_count=0,
