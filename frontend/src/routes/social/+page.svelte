@@ -8,6 +8,11 @@
 	type Tab = 'friends' | 'discover' | 'requests' | 'marketplace' | 'recommendations';
 	let activeTab: Tab = 'friends';
 
+	function setTab(id: string) {
+		activeTab = id as Tab;
+		viewingUser = null;
+	}
+
 	let friends: UserPublic[] = [];
 	let pendingRequests: FriendshipRead[] = [];
 	let sentRequests: FriendshipRead[] = [];
@@ -136,7 +141,7 @@
 				class:shadow-sm={activeTab === tab.id}
 				class:text-gray-900={activeTab === tab.id}
 				class:text-gray-500={activeTab !== tab.id}
-				on:click={() => { activeTab = tab.id as Tab; viewingUser = null; }}
+				on:click={() => setTab(tab.id)}
 			>
 				<svelte:component this={tab.icon} size={14} />
 				{tab.label}
