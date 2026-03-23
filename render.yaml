@@ -1,0 +1,49 @@
+# Render deployment configuration
+# https://render.com/docs/render-yaml-spec
+
+services:
+  # Backend API
+  - type: web
+    name: closet-ai-backend
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///./closet_ai.db
+      - key: FRONTEND_URL
+        fromService:
+          name: closet-ai-frontend
+          type: web
+          property: host
+      - key: DEBUG
+        value: "false"
+      - key: ENVIRONMENT
+        value: production
+    healthCheckPath: /health
+    plan: free
+
+  # Frontend
+  - type: web
+    name: closet-ai-frontend
+    runtime: node
+    buildCommand: npm ci && npm run build
+    startCommand: node build/index.js
+    rootDir: frontend
+    envVars:
+      - key: ORIGIN
+        fromService:
+          name: closet-ai-frontend
+          type: web
+          property: host
+      - key: VITE_API_URL
+        fromService:
+          name: closet-ai-backend
+          type: web
+          property: host
+      - key: NODE_ENV
+        value: production
+    plan: free

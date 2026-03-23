@@ -16,3 +16,39 @@ data/processed/
 *.pth
 *.pt
 *.h5
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# SQLite databases
+*.db
+*.sqlite
+
+# Environment files
+.env
+backend/.env
+frontend/.env
+
+# Node / SvelteKit
+node_modules/
+frontend/.svelte-kit/
+frontend/build/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local data volume
+data/
