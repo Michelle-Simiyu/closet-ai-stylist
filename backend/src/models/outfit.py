@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
 import json
+from .clothing import ClothingItemRead
 
 
 class OutfitBase(SQLModel):
@@ -64,7 +65,7 @@ class OutfitWithItems(SQLModel):
     user_id: str
     name: Optional[str]
     occasion: str
-    items: List[Any]  # ClothingItemRead objects
+    items: List[ClothingItemRead]
     compatibility_score: float
     liked: bool
     worn_count: int
