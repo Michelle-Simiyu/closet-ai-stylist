@@ -2,7 +2,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy.pool import StaticPool
-from unittest.mock import patch
+
+# Import all models so SQLModel.metadata is populated before create_all
+import src.models.user  # noqa: F401
+import src.models.clothing  # noqa: F401
+import src.models.outfit  # noqa: F401
+import src.models.social  # noqa: F401
 
 # Use in-memory SQLite for tests
 TEST_DATABASE_URL = "sqlite://"
