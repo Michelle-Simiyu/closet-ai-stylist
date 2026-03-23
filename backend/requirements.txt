@@ -1,18 +1,18 @@
 # Web framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
 
 # Database
-sqlmodel==0.0.16
-aiosqlite==0.19.0
+sqlmodel>=0.0.16
+aiosqlite>=0.19.0
 
 # Auth
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
 
 # Settings
-pydantic-settings==2.1.0
+pydantic-settings>=2.1.0
 
 # Image processing
 Pillow==10.4.0
@@ -21,12 +21,11 @@ Pillow==10.4.0
 # rembg==2.0.50
 
 # Cloud storage (optional)
-cloudinary==1.36.0
+cloudinary>=1.36.0
 
 # HTTP client
-httpx==0.25.2
+httpx>=0.25.0
 
 # Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
-httpx==0.25.2
+pytest>=7.4.3
+pytest-asyncio>=0.21.1

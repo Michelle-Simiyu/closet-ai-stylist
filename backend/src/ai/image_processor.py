@@ -5,7 +5,17 @@ import io
 import base64
 import logging
 from typing import Optional, Tuple, Dict, Any
-from PIL import Image
+
+# Pillow is optional — image resize/color features degrade gracefully without it
+try:
+    from PIL import Image
+    PILLOW_AVAILABLE = True
+except ImportError:
+    PILLOW_AVAILABLE = False
+    logging.getLogger(__name__).warning(
+        "Pillow not installed — image resizing and color extraction disabled. "
+        "Install with: pip install Pillow>=11.0.0"
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +54,8 @@ def remove_background(image_data: bytes) -> bytes:
 
 def resize_image(image_data: bytes, max_dimension: int = MAX_DIMENSION) -> bytes:
     """Resize image while maintaining aspect ratio."""
+    if not PILLOW_AVAILABLE:
+        return image_data
     try:
         img = Image.open(io.BytesIO(image_data))
 
@@ -72,6 +84,8 @@ def resize_image(image_data: bytes, max_dimension: int = MAX_DIMENSION) -> bytes
 
 def extract_dominant_colors(image_data: bytes, n_colors: int = 3) -> list:
     """Extract dominant colors from image using simple clustering."""
+    if not PILLOW_AVAILABLE:
+        return ["unknown"]
     try:
         img = Image.open(io.BytesIO(image_data)).convert("RGB")
         img = img.resize((100, 100))  # Downscale for speed
