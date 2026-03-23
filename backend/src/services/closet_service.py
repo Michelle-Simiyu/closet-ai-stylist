@@ -151,8 +151,7 @@ async def create_item(
     item_data: ClothingItemCreate,
     user_id: str,
 ) -> ClothingItem:
-    item = ClothingItem.model_validate(item_data)
-    item.user_id = user_id
+    item = ClothingItem(**item_data.model_dump(), user_id=user_id)
     session.add(item)
     session.commit()
     session.refresh(item)
