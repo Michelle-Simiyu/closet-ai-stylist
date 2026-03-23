@@ -62,6 +62,10 @@ function createAuthStore() {
 			return data;
 		},
 
+		setUser(user: User) {
+			update((s) => ({ ...s, user }));
+		},
+
 		logout() {
 			localStorage.removeItem('token');
 			set({ user: null, token: null, loading: false, initialized: true });

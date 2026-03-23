@@ -4,7 +4,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { Shirt, Sparkles, Bookmark, BarChart2, Menu, X, LogOut } from 'lucide-svelte';
+	import { Shirt, Sparkles, Bookmark, Users, Settings, Menu, X, LogOut } from 'lucide-svelte';
 	import { initAnalytics, analytics } from '$lib/utils/analytics';
 
 	const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY ?? '';
@@ -21,9 +21,14 @@
 		{ href: '/closet', label: 'My Closet', icon: Shirt },
 		{ href: '/outfits', label: 'Outfits', icon: Sparkles },
 		{ href: '/outfits/saved', label: 'Saved', icon: Bookmark },
+		{ href: '/social', label: 'Social', icon: Users },
 	];
 
-	$: isAuthRoute = $page.url.pathname === '/' || $page.url.pathname === '/login' || $page.url.pathname === '/register';
+	$: isAuthRoute =
+		$page.url.pathname === '/' ||
+		$page.url.pathname === '/login' ||
+		$page.url.pathname === '/register' ||
+		$page.url.pathname === '/onboarding';
 </script>
 
 <div class="min-h-screen bg-gray-50">
@@ -55,10 +60,29 @@
 				</nav>
 
 				<!-- Right actions -->
-				<div class="flex items-center gap-2">
-					<span class="hidden sm:block text-sm text-gray-500">
-						{$authStore.user?.username}
-					</span>
+				<div class="flex items-center gap-1">
+					<!-- Settings -->
+					<a
+						href="/settings"
+						class="p-2 rounded-lg transition-colors"
+						class:text-primary-600={$page.url.pathname === '/settings'}
+						class:bg-primary-50={$page.url.pathname === '/settings'}
+						class:text-gray-500={$page.url.pathname !== '/settings'}
+						class:hover:bg-gray-100={$page.url.pathname !== '/settings'}
+						title="Settings"
+					>
+						<Settings size={16} />
+					</a>
+
+					<!-- Username avatar -->
+					<a href="/settings" class="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors">
+						<div class="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-xs">
+							{($authStore.user?.username ?? '?')[0].toUpperCase()}
+						</div>
+						<span class="text-sm text-gray-600">{$authStore.user?.username}</span>
+					</a>
+
+					<!-- Logout -->
 					<button
 						class="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
 						on:click={() => { authStore.logout(); goto('/'); }}
@@ -66,6 +90,7 @@
 					>
 						<LogOut size={16} />
 					</button>
+
 					<!-- Mobile menu btn -->
 					<button
 						class="md:hidden p-2 hover:bg-gray-100 rounded-lg"
@@ -92,6 +117,17 @@
 							{item.label}
 						</a>
 					{/each}
+					<a
+						href="/settings"
+						class="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium"
+						class:text-primary-600={$page.url.pathname === '/settings'}
+						class:bg-primary-50={$page.url.pathname === '/settings'}
+						class:text-gray-600={$page.url.pathname !== '/settings'}
+						on:click={() => (mobileMenuOpen = false)}
+					>
+						<Settings size={16} />
+						Settings
+					</a>
 				</nav>
 			{/if}
 		</header>
