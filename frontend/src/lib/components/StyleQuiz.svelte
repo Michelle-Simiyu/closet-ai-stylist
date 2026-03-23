@@ -7,7 +7,7 @@
 	let step = 0;
 	let saving = false;
 
-	const quiz = {
+	let quiz = {
 		preferred_styles: [] as string[],
 		formality_preference: 2,
 		color_preference: 'mixed',
@@ -59,6 +59,11 @@
 
 	$: currentQ = questions[step];
 	$: progress = ((step + 1) / questions.length) * 100;
+	$: currentValue = (quiz as Record<string, unknown>)[currentQ.id];
+
+	function selectOption(id: string, value: string) {
+		quiz = { ...quiz, [id]: value } as typeof quiz;
+	}
 
 	function toggleStyle(value: string) {
 		if (quiz.preferred_styles.includes(value)) {
@@ -102,7 +107,8 @@
 		</div>
 	</div>
 
-	<div class="card p-6 animate-fade-in" key={step}>
+	{#key step}
+	<div class="card p-6 animate-fade-in">
 		<h2 class="text-xl font-semibold text-gray-900 mb-5">{currentQ.question}</h2>
 
 		{#if currentQ.type === 'multi'}
@@ -130,12 +136,12 @@
 					<button
 						type="button"
 						class="w-full p-3 rounded-xl border-2 text-sm font-medium text-left flex items-center gap-3 transition-all"
-						class:border-primary-500={quiz[currentQ.id as keyof typeof quiz] === option.value}
-						class:bg-primary-50={quiz[currentQ.id as keyof typeof quiz] === option.value}
-						class:text-primary-700={quiz[currentQ.id as keyof typeof quiz] === option.value}
-						class:border-gray-200={quiz[currentQ.id as keyof typeof quiz] !== option.value}
-						class:text-gray-700={quiz[currentQ.id as keyof typeof quiz] !== option.value}
-						on:click={() => { (quiz as Record<string, unknown>)[currentQ.id] = option.value; }}
+						class:border-primary-500={currentValue === option.value}
+						class:bg-primary-50={currentValue === option.value}
+						class:text-primary-700={currentValue === option.value}
+						class:border-gray-200={currentValue !== option.value}
+						class:text-gray-700={currentValue !== option.value}
+						on:click={() => selectOption(currentQ.id, option.value)}
 					>
 						<span class="text-xl">{option.emoji}</span>
 						{option.label}
@@ -181,4 +187,5 @@
 			</button>
 		</div>
 	</div>
+	{/key}
 </div>
