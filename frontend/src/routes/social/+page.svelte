@@ -18,7 +18,7 @@
 	let sentRequests: FriendshipRead[] = [];
 	let searchResults: UserPublic[] = [];
 	let recommendations: ClosetRecommendationRead[] = [];
-	let marketplace: MarketplaceListing[] = [];
+	let marketplace: any[] = [];
 
 	let searchQuery = '';
 	let searching = false;
@@ -27,8 +27,8 @@
 
 	// For viewing a friend's closet inline
 	let viewingUser: UserPublic | null = null;
-	let friendCloset: unknown[] = [];
-	let friendOutfits: unknown[] = [];
+	let friendCloset: any[] = [];
+	let friendOutfits: any[] = [];
 	let viewTab: 'closet' | 'outfits' = 'closet';
 	let loadingView = false;
 
@@ -214,20 +214,19 @@
 				{:else}
 					<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
 						{#each friendCloset as item}
-							{@const i = item as any}
 							<div class="card overflow-hidden">
 								<div class="aspect-square bg-gray-50">
-									{#if i.image_url}
-										<img src={i.image_url} alt={i.name} class="w-full h-full object-cover" loading="lazy" />
+									{#if item.image_url}
+										<img src={item.image_url} alt={item.name} class="w-full h-full object-cover" loading="lazy" />
 									{:else}
 										<div class="w-full h-full flex items-center justify-center text-3xl">
-											{#if i.category === 'top'}👕{:else if i.category === 'bottom'}👖{:else if i.category === 'dress'}👗{:else if i.category === 'shoes'}👟{:else if i.category === 'outerwear'}🧥{:else}💍{/if}
+											{#if item.category === 'top'}👕{:else if item.category === 'bottom'}👖{:else if item.category === 'dress'}👗{:else if item.category === 'shoes'}👟{:else if item.category === 'outerwear'}🧥{:else}💍{/if}
 										</div>
 									{/if}
 								</div>
 								<div class="p-2">
-									<div class="text-xs font-medium text-gray-900 truncate">{i.name}</div>
-									<div class="text-xs text-gray-500 capitalize">{i.category}</div>
+									<div class="text-xs font-medium text-gray-900 truncate">{item.name}</div>
+									<div class="text-xs text-gray-500 capitalize">{item.category}</div>
 								</div>
 							</div>
 						{/each}
@@ -239,21 +238,19 @@
 				{:else}
 					<div class="space-y-3">
 						{#each friendOutfits as outfit}
-							{@const o = outfit as any}
 							<div class="card p-4">
 								<div class="flex items-center justify-between mb-3">
-									<span class="text-sm font-medium text-gray-900">{o.description ?? o.occasion}</span>
-									<span class="badge-gray">{Math.round(o.compatibility_score)}% match</span>
+									<span class="text-sm font-medium text-gray-900">{outfit.description ?? outfit.occasion}</span>
+									<span class="badge-gray">{Math.round(outfit.compatibility_score)}% match</span>
 								</div>
 								<div class="flex gap-2 overflow-x-auto">
-									{#each o.items ?? [] as item}
-										{@const it = item as any}
+									{#each outfit.items ?? [] as outfitItem}
 										<div class="flex-shrink-0 w-14 h-14 rounded-lg bg-gray-50 overflow-hidden">
-											{#if it.image_url}
-												<img src={it.image_url} alt={it.name} class="w-full h-full object-cover" />
+											{#if outfitItem.image_url}
+												<img src={outfitItem.image_url} alt={outfitItem.name} class="w-full h-full object-cover" />
 											{:else}
 												<div class="w-full h-full flex items-center justify-center">
-													{#if it.category === 'top'}👕{:else if it.category === 'bottom'}👖{:else}👗{/if}
+													{#if outfitItem.category === 'top'}👕{:else if outfitItem.category === 'bottom'}👖{:else}👗{/if}
 												</div>
 											{/if}
 										</div>
@@ -392,29 +389,28 @@
 			{:else}
 				<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
 					{#each marketplace as listing}
-						{@const l = listing as any}
 						<div class="card overflow-hidden">
 							<div class="aspect-square bg-gray-50">
-								{#if l.item?.image_url}
-									<img src={l.item.image_url} alt={l.item?.name} class="w-full h-full object-cover" />
+								{#if listing.item?.image_url}
+									<img src={listing.item.image_url} alt={listing.item?.name} class="w-full h-full object-cover" />
 								{:else}
 									<div class="w-full h-full flex items-center justify-center text-4xl">
-										{#if l.item?.category === 'top'}👕{:else if l.item?.category === 'bottom'}👖{:else if l.item?.category === 'dress'}👗{:else if l.item?.category === 'shoes'}👟{:else}🧥{/if}
+										{#if listing.item?.category === 'top'}👕{:else if listing.item?.category === 'bottom'}👖{:else if listing.item?.category === 'dress'}👗{:else if listing.item?.category === 'shoes'}👟{:else}🧥{/if}
 									</div>
 								{/if}
 							</div>
 							<div class="p-3">
-								<div class="font-medium text-sm text-gray-900 truncate">{l.item?.name ?? 'Item'}</div>
-								<div class="text-xs text-gray-500 capitalize mb-2">{l.item?.category} · {l.item?.color}</div>
-								{#if l.description}
-									<div class="text-xs text-gray-600 mb-2">{l.description}</div>
+								<div class="font-medium text-sm text-gray-900 truncate">{listing.item?.name ?? 'Item'}</div>
+								<div class="text-xs text-gray-500 capitalize mb-2">{listing.item?.category} · {listing.item?.color}</div>
+								{#if listing.description}
+									<div class="text-xs text-gray-600 mb-2">{listing.description}</div>
 								{/if}
 								<div class="flex items-center justify-between">
 									<span class="font-bold text-primary-600">
-										{l.price ? `${l.currency} ${l.price}` : 'Free / negotiable'}
+										{listing.price ? `${listing.currency} ${listing.price}` : 'Free / negotiable'}
 									</span>
-									{#if l.user_id === 'self'}
-										<button class="text-xs text-gray-400 hover:text-gray-600" on:click={() => markSold(l.id)}>Mark sold</button>
+									{#if listing.user_id === 'self'}
+										<button class="text-xs text-gray-400 hover:text-gray-600" on:click={() => markSold(listing.id)}>Mark sold</button>
 									{/if}
 								</div>
 							</div>
