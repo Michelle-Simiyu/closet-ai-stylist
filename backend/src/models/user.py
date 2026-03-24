@@ -39,8 +39,8 @@ class User(UserBase, table=True):
 
 class UserCreate(SQLModel):
     email: str
-    username: str
-    password: str
+    username: str = Field(min_length=2)
+    password: str = Field(min_length=8)
 
 
 class UserUpdate(SQLModel):
