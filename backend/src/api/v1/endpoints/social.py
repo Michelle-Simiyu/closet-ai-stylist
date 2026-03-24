@@ -17,6 +17,24 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/social", tags=["social"])
 
 
+# ── Public Feed ──────────────────────────────────────────────────────────────
+
+@router.get("/feed")
+async def get_feed(
+    style: str = Query(None),
+    country: str = Query(None),
+    limit: int = Query(20, ge=1, le=50),
+    offset: int = Query(0, ge=0),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    return social_service.get_public_feed(
+        session, current_user.id,
+        style=style, country=country,
+        limit=limit, offset=offset,
+    )
+
+
 # ── User search & profiles ───────────────────────────────────────────────────
 
 @router.get("/users/search", response_model=List[UserPublic])

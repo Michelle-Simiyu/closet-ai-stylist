@@ -2,11 +2,11 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { authStore, isAuthenticated } from '$lib/stores/auth';
-	import { socialApi, type UserPublic, type FriendshipRead, type ClosetRecommendationRead, type MarketplaceListing } from '$lib/api/client';
-	import { Search, UserPlus, UserCheck, ShoppingBag, Bell, Users } from 'lucide-svelte';
+	import { socialApi, type UserPublic, type FriendshipRead, type ClosetRecommendationRead, type MarketplaceListing, type FeedEntry } from '$lib/api/client';
+	import { Search, UserPlus, UserCheck, ShoppingBag, Bell, Users, Rss } from 'lucide-svelte';
 
-	type Tab = 'friends' | 'discover' | 'requests' | 'marketplace' | 'recommendations';
-	let activeTab: Tab = 'friends';
+	type Tab = 'feed' | 'friends' | 'discover' | 'requests' | 'marketplace' | 'recommendations';
+	let activeTab: Tab = 'feed';
 
 	function setTab(id: string) {
 		activeTab = id as Tab;
@@ -25,6 +25,15 @@
 	let loading = false;
 	let actionMsg = '';
 
+	// Feed state
+	let feed: FeedEntry[] = [];
+	let feedLoading = false;
+	let feedStyle = '';
+	let feedCountry = '';
+	let feedOffset = 0;
+	let feedHasMore = true;
+	const FEED_LIMIT = 12;
+
 	// For viewing a friend's closet inline
 	let viewingUser: UserPublic | null = null;
 	let friendCloset: any[] = [];
@@ -35,7 +44,7 @@
 	onMount(async () => {
 		await authStore.init();
 		if (!$isAuthenticated) { goto('/'); return; }
-		await loadAll();
+		await Promise.all([loadAll(), loadFeed()]);
 	});
 
 	async function loadAll() {
@@ -49,6 +58,32 @@
 			]);
 		} catch {}
 		loading = false;
+	}
+
+	async function loadFeed(reset = false) {
+		if (reset) { feed = []; feedOffset = 0; feedHasMore = true; }
+		if (!feedHasMore) return;
+		feedLoading = true;
+		try {
+			const params: Record<string, string | number> = { limit: FEED_LIMIT, offset: feedOffset };
+			if (feedStyle) params.style = feedStyle;
+			if (feedCountry) params.country = feedCountry;
+			const page = await socialApi.getFeed(params as any);
+			feed = reset ? page : [...feed, ...page];
+			feedOffset += page.length;
+			feedHasMore = page.length === FEED_LIMIT;
+		} catch {}
+		feedLoading = false;
+	}
+
+	async function feedSendRequest(entry: FeedEntry) {
+		try {
+			await socialApi.sendFriendRequest(entry.user.id);
+			feed = feed.map(e =>
+				e.user.id === entry.user.id ? { ...e, has_pending_request: true } : e
+			);
+			sentRequests = await socialApi.getSentRequests();
+		} catch {}
 	}
 
 	async function searchUsers() {
@@ -129,6 +164,7 @@
 	<!-- Tabs -->
 	<div class="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl overflow-x-auto">
 		{#each [
+			{ id: 'feed', label: 'Feed', icon: Rss, badge: 0 },
 			{ id: 'friends', label: 'Friends', icon: Users, badge: 0 },
 			{ id: 'discover', label: 'Discover', icon: Search, badge: 0 },
 			{ id: 'requests', label: 'Requests', icon: UserPlus, badge: pendingCount },
@@ -160,8 +196,138 @@
 		</div>
 	{/if}
 
+	<!-- FEED tab -->
+	{#if activeTab === 'feed'}
+		<!-- Filters -->
+		<div class="flex flex-wrap gap-2 mb-5">
+			<div class="flex gap-1 flex-wrap">
+				{#each ['', 'casual', 'minimalist', 'formal', 'bohemian', 'sporty'] as s}
+					<button
+						class="px-3 py-1.5 rounded-full text-xs font-medium border transition-all"
+						class:bg-gray-900={feedStyle === s}
+						class:text-white={feedStyle === s}
+						class:border-gray-900={feedStyle === s}
+						class:bg-white={feedStyle !== s}
+						class:text-gray-600={feedStyle !== s}
+						class:border-gray-200={feedStyle !== s}
+						on:click={() => { feedStyle = s; loadFeed(true); }}
+					>{s === '' ? 'All styles' : s.charAt(0).toUpperCase() + s.slice(1)}</button>
+				{/each}
+			</div>
+			<div class="flex gap-2 items-center ml-auto">
+				<input
+					type="text"
+					placeholder="Filter by country…"
+					bind:value={feedCountry}
+					class="px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-400 w-36"
+					on:keydown={e => e.key === 'Enter' && loadFeed(true)}
+				/>
+				{#if feedCountry}
+					<button class="text-xs text-gray-400 hover:text-gray-600" on:click={() => { feedCountry = ''; loadFeed(true); }}>✕</button>
+				{/if}
+			</div>
+		</div>
+
+		{#if feedLoading && feed.length === 0}
+			<div class="text-center py-16 text-gray-400">Loading feed…</div>
+		{:else if feed.length === 0 && !feedLoading}
+			<div class="text-center py-16">
+				<div class="text-5xl mb-3">🌍</div>
+				<p class="text-gray-500 text-sm">No public profiles found{feedStyle ? ` with ${feedStyle} style` : ''}{feedCountry ? ` in ${feedCountry}` : ''}.</p>
+				<p class="text-gray-400 text-xs mt-1">Try a different filter, or set your own account to public in Settings.</p>
+			</div>
+		{:else}
+			<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+				{#each feed as entry}
+					<div class="card overflow-hidden flex flex-col">
+						<!-- User header -->
+						<div class="p-4 flex items-start gap-3">
+							<div class="w-11 h-11 rounded-full bg-gradient-to-br from-primary-400 to-accent-400 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+								{#if entry.user.avatar_url}
+									<img src={entry.user.avatar_url} alt={entry.user.username} class="w-full h-full rounded-full object-cover" />
+								{:else}
+									{entry.user.username[0].toUpperCase()}
+								{/if}
+							</div>
+							<div class="flex-1 min-w-0">
+								<div class="font-semibold text-gray-900 text-sm truncate">{entry.user.username}</div>
+								{#if entry.user.country}
+									<div class="text-xs text-gray-400 mt-0.5">📍 {entry.user.country}</div>
+								{/if}
+								{#if entry.user.bio}
+									<div class="text-xs text-gray-500 mt-1 line-clamp-2">{entry.user.bio}</div>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Closet snapshot -->
+						{#if entry.recent_items.length > 0}
+							<div class="grid grid-cols-4 gap-0.5 mx-4 mb-3">
+								{#each entry.recent_items as item}
+									<div class="aspect-square rounded-lg bg-gray-50 overflow-hidden">
+										{#if item.image_url}
+											<img src={item.image_url} alt={item.name} class="w-full h-full object-cover" />
+										{:else}
+											<div class="w-full h-full flex items-center justify-center text-xl">
+												{#if item.category === 'top'}👕{:else if item.category === 'bottom'}👖{:else if item.category === 'dress'}👗{:else if item.category === 'shoes'}👟{:else if item.category === 'outerwear'}🧥{:else}💍{/if}
+											</div>
+										{/if}
+									</div>
+								{/each}
+								{#each Array(Math.max(0, 4 - entry.recent_items.length)) as _}
+									<div class="aspect-square rounded-lg bg-gray-50"></div>
+								{/each}
+							</div>
+						{/if}
+
+						<!-- Style tags -->
+						{#if entry.top_styles.length > 0}
+							<div class="px-4 mb-3 flex flex-wrap gap-1">
+								{#each entry.top_styles as style}
+									<span class="px-2 py-0.5 bg-primary-50 text-primary-700 rounded-full text-[10px] font-medium capitalize">{style}</span>
+								{/each}
+							</div>
+						{/if}
+
+						<!-- Stats + action -->
+						<div class="px-4 pb-4 mt-auto flex items-center gap-3">
+							<div class="flex gap-3 text-xs text-gray-400">
+								<span>👗 {entry.item_count} items</span>
+								<span>✨ {entry.outfit_count} outfits</span>
+							</div>
+							<div class="ml-auto">
+								{#if entry.is_friend}
+									<span class="flex items-center gap-1 text-xs text-green-600 font-medium">
+										<UserCheck size={12} /> Friends
+									</span>
+								{:else if entry.has_pending_request}
+									<span class="text-xs text-gray-400">Pending…</span>
+								{:else}
+									<button
+										class="btn-primary text-xs px-3 py-1.5 flex items-center gap-1"
+										on:click={() => feedSendRequest(entry)}
+									><UserPlus size={12} /> Add</button>
+								{/if}
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+
+			<!-- Load more -->
+			{#if feedHasMore}
+				<div class="text-center mt-6">
+					<button
+						class="btn-ghost text-sm"
+						on:click={() => loadFeed()}
+						disabled={feedLoading}
+					>{feedLoading ? 'Loading…' : 'Load more'}</button>
+				</div>
+			{/if}
+		{/if}
+
 	<!-- FRIENDS tab -->
-	{#if activeTab === 'friends'}
+	{:else if activeTab === 'friends'}
 		{#if viewingUser}
 			<!-- Friend profile view -->
 			<div class="mb-4 flex items-center gap-3">

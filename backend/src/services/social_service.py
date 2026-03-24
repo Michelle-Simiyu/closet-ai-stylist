@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple
-from sqlmodel import Session, select, or_, and_
+from typing import Dict, List, Optional, Tuple
+from sqlmodel import Session, select, or_, and_, func
 from ..models.user import User, UserPublic
 from ..models.social import (
     Friendship, FriendshipStatus,
@@ -11,6 +11,106 @@ from ..models.social import (
 from ..models.clothing import ClothingItem, ClothingItemRead
 from ..models.outfit import Outfit, OutfitWithItems
 from ..core.exceptions import NotFoundError, AuthorizationError
+
+
+# ── Public Feed ──────────────────────────────────────────────────────────────
+
+def get_public_feed(
+    session: Session,
+    current_user_id: str,
+    style: Optional[str] = None,
+    country: Optional[str] = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> List[dict]:
+    """Return public profiles enriched with closet snapshot and style stats."""
+    query = (
+        select(User)
+        .where(
+            User.closet_visibility == "public",
+            User.id != current_user_id,
+            User.is_demo == False,
+        )
+        .order_by(User.created_at.desc())
+    )
+    if country:
+        query = query.where(User.country == country)
+
+    users = session.exec(query.offset(offset).limit(limit * 3)).all()
+
+    friend_ids_set = set(_friend_ids(session, current_user_id))
+    sent_req_ids = {
+        r.addressee_id
+        for r in session.exec(
+            select(Friendship).where(
+                Friendship.requester_id == current_user_id,
+                Friendship.status == FriendshipStatus.pending,
+            )
+        ).all()
+    }
+
+    result: List[dict] = []
+    for u in users:
+        if len(result) >= limit:
+            break
+
+        items = session.exec(
+            select(ClothingItem)
+            .where(ClothingItem.user_id == u.id, ClothingItem.is_demo == False)
+            .order_by(ClothingItem.created_at.desc())
+            .limit(60)
+        ).all()
+
+        # Style filter: skip user if they have no items in requested style
+        if style and not any(i.style == style for i in items):
+            continue
+
+        # Style breakdown
+        style_counts: Dict[str, int] = {}
+        for i in items:
+            style_counts[str(i.style)] = style_counts.get(str(i.style), 0) + 1
+        top_styles = sorted(style_counts, key=lambda s: style_counts[s], reverse=True)[:3]
+
+        # Prefer items with images for the snapshot
+        items_with_img = [i for i in items if i.image_url]
+        snapshot = (items_with_img[:4] if items_with_img else items[:4])
+
+        outfit_count = session.exec(
+            select(func.count()).select_from(Outfit).where(
+                Outfit.user_id == u.id, Outfit.is_saved == True
+            )
+        ).one()
+
+        result.append({
+            "user": {
+                "id": u.id,
+                "username": u.username,
+                "bio": u.bio,
+                "avatar_url": u.avatar_url,
+                "country": u.country,
+                "closet_visibility": u.closet_visibility,
+                "created_at": u.created_at.isoformat(),
+            },
+            "item_count": len(items),
+            "outfit_count": outfit_count,
+            "top_styles": top_styles,
+            "recent_items": [
+                {
+                    "id": i.id,
+                    "name": i.name,
+                    "category": str(i.category),
+                    "color": i.color,
+                    "style": str(i.style),
+                    "image_url": i.image_url,
+                    "brand": i.brand,
+                }
+                for i in snapshot
+            ],
+            "is_friend": u.id in friend_ids_set,
+            "has_pending_request": u.id in sent_req_ids,
+        })
+
+    return result
 
 logger = logging.getLogger(__name__)
 
