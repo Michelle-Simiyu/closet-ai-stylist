@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import { createEventDispatcher, onDestroy } from 'svelte';
 	import { authApi } from '$lib/api/client';
 
 	const dispatch = createEventDispatcher<{ complete: Record<string, unknown> }>();
@@ -212,23 +212,32 @@
 
 	async function finish() {
 		saving = true;
-		// Fill any empty optional fields with sensible defaults before saving
+		// Convert empty optional strings to null so the backend leaves existing values intact.
+		// Fill required string fields with sensible defaults if user skipped them.
 		const payload = {
 			...quiz,
+			gender: quiz.gender || null,
+			country: quiz.country || null,
 			color_preference: quiz.color_preference || 'mixed',
 			occasion_priority: quiz.occasion_priority || 'casual',
 			budget_sensitivity: quiz.budget_sensitivity || 'medium',
-			fit_preference: quiz.fit_preference || 'regular',
-			sustainability_preference: quiz.sustainability_preference || 'medium',
-			shopping_frequency: quiz.shopping_frequency || 'seasonally',
+			fit_preference: quiz.fit_preference || null,
+			sustainability_preference: quiz.sustainability_preference || null,
+			shopping_frequency: quiz.shopping_frequency || null,
 		};
 		try {
 			await authApi.saveQuiz(payload);
 			dispatch('complete', payload);
 		} catch {
 			dispatch('complete', payload);
+		} finally {
+			saving = false;
 		}
 	}
+
+	onDestroy(() => {
+		if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+	});
 
 	function next() {
 		if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
