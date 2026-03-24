@@ -4,6 +4,24 @@
 
 	const dispatch = createEventDispatcher<{ complete: Record<string, unknown> }>();
 
+	interface QuizOption {
+		value: string;
+		label: string;
+		emoji: string;
+		desc?: string;
+	}
+
+	interface QuizQuestion {
+		id: string;
+		question: string;
+		subtitle?: string;
+		type: string;
+		skippable: boolean;
+		stepName: string;
+		options?: QuizOption[];
+		labels?: string[];
+	}
+
 	let step = 0;
 	let saving = false;
 	let autoAdvanceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -38,7 +56,7 @@
 		'United States','Uruguay','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe',
 	];
 
-	const questions = [
+	const questions: QuizQuestion[] = [
 		{
 			id: 'gender',
 			question: 'How do you identify?',
@@ -197,18 +215,17 @@
 		autoAdvanceTimer = setTimeout(() => { next(); }, 380);
 	}
 
-	function canProceed(): boolean {
-		if (currentQ.id === 'gender') return quiz.gender !== '';
-		if (currentQ.id === 'preferred_styles') return quiz.preferred_styles.length > 0;
-		return true;
-	}
+	$: canProceed = currentQ.id === 'gender'
+		? quiz.gender !== ''
+		: currentQ.id === 'preferred_styles'
+			? quiz.preferred_styles.length > 0
+			: true;
 
-	/** Why the Next button is currently locked */
-	function lockedReason(): string {
-		if (currentQ.id === 'gender') return 'Select how you identify to continue';
-		if (currentQ.id === 'preferred_styles') return 'Pick at least one style to continue';
-		return '';
-	}
+	$: lockedReason = currentQ.id === 'gender'
+		? 'Select how you identify to continue'
+		: currentQ.id === 'preferred_styles'
+			? 'Pick at least one style to continue'
+			: '';
 
 	async function finish() {
 		saving = true;
@@ -464,8 +481,8 @@
 		<!-- Navigation -->
 		<div class="mt-6 space-y-3">
 			<!-- Locked hint -->
-			{#if !canProceed() && lockedReason()}
-				<p class="text-center text-xs text-gray-400">{lockedReason()}</p>
+			{#if !canProceed && lockedReason}
+				<p class="text-center text-xs text-gray-400">{lockedReason}</p>
 			{/if}
 
 			<div class="flex items-center gap-2">
@@ -489,7 +506,7 @@
 					<button
 						class="btn-primary min-w-[100px]"
 						on:click={next}
-						disabled={saving || !canProceed()}
+						disabled={saving || !canProceed}
 					>
 						{#if saving}
 							<span class="flex items-center gap-2">
