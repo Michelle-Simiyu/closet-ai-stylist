@@ -175,7 +175,7 @@
 						{#if viewingUser.bio}<div class="text-xs text-gray-500">{viewingUser.bio}</div>{/if}
 					</div>
 				</div>
-				<button class="ml-auto btn-ghost text-xs text-red-500 hover:bg-red-50" on:click={() => removeFriend(viewingUser!.id)}>
+				<button class="ml-auto btn-ghost text-xs text-red-500 hover:bg-red-50" on:click={() => viewingUser && removeFriend(viewingUser.id)}>
 					Remove friend
 				</button>
 			</div>
