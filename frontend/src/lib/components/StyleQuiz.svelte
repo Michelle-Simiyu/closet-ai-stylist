@@ -4,6 +4,24 @@
 
 	const dispatch = createEventDispatcher<{ complete: Record<string, unknown> }>();
 
+	interface QuizOption {
+		value: string;
+		label: string;
+		emoji: string;
+		desc?: string;
+	}
+
+	interface QuizQuestion {
+		id: string;
+		question: string;
+		subtitle?: string;
+		type: string;
+		skippable: boolean;
+		stepName: string;
+		options?: QuizOption[];
+		labels?: string[];
+	}
+
 	let step = 0;
 	let saving = false;
 	let autoAdvanceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -38,7 +56,7 @@
 		'United States','Uruguay','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe',
 	];
 
-	const questions = [
+	const questions: QuizQuestion[] = [
 		{
 			id: 'gender',
 			question: 'How do you identify?',
