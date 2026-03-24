@@ -219,6 +219,34 @@ export interface ClosetRecommendationRead {
 	is_read: boolean;
 }
 
+export interface FeedItem {
+	id: string;
+	name: string;
+	category: string;
+	color: string;
+	style: string;
+	image_url?: string;
+	brand?: string;
+}
+
+export interface FeedEntry {
+	user: {
+		id: string;
+		username: string;
+		bio?: string;
+		avatar_url?: string;
+		country?: string;
+		closet_visibility: string;
+		created_at: string;
+	};
+	item_count: number;
+	outfit_count: number;
+	top_styles: string[];
+	recent_items: FeedItem[];
+	is_friend: boolean;
+	has_pending_request: boolean;
+}
+
 export interface MarketplaceListing {
 	id: string;
 	user_id: string;
@@ -313,6 +341,9 @@ export const socialApi = {
 		api.post('/social/marketplace', data),
 	markSold: (listingId: string) => api.patch(`/social/marketplace/${listingId}/sold`),
 	removeListing: (listingId: string) => api.delete(`/social/marketplace/${listingId}`),
+
+	getFeed: (params?: { style?: string; country?: string; limit?: number; offset?: number }) =>
+		api.get<FeedEntry[]>('/social/feed', params as Record<string, string | number | boolean>),
 
 	getRecommendations: () => api.get<ClosetRecommendationRead[]>('/social/recommendations'),
 	sendRecommendation: (data: {
