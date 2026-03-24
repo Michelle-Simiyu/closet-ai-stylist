@@ -95,7 +95,10 @@ class StyleQuizResponse(SQLModel):
     preferred_styles: list[str]
     formality_preference: int  # 1-5
     color_preference: str      # neutral, bold, mixed
-    occasion_priority: str     # casual, work, formal
+    occasion_priority: str     # casual, work, formal, date
     budget_sensitivity: str    # low, medium, high
+    fit_preference: Optional[str] = None   # oversized, regular, slim
+    sustainability_preference: Optional[str] = None  # high, medium, low
+    shopping_frequency: Optional[str] = None  # rarely, seasonally, monthly, weekly
     gender: Optional[str] = None
     country: Optional[str] = None
